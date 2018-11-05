@@ -1,6 +1,7 @@
 import { latestTime } from 'openzeppelin-solidity/test/helpers/latestTime';
 import { advanceBlock } from 'openzeppelin-solidity/test/helpers/advanceToBlock';
 import { increaseTimeTo, duration } from 'openzeppelin-solidity/test/helpers/increaseTime';
+import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
 const NameRegistry = artifacts.require('NameRegistry');
 const PwayToken = artifacts.require('PwayToken');
 
@@ -25,7 +26,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
   beforeEach(async function () {
     data.nameRegistry = await NameRegistry.new();
 
-    var now = await latestTime(); 
+    var now = await latestTime();
 
     data.startTime = now + duration.days(1);
     data.token = await PwayToken.new(data.nameRegistry.address, now - duration.days(91));//.new(_, recipient1, recipient2,"100000"+ "00000000000", data.nameRegistry.address);
@@ -70,7 +71,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       var user0OwnsAfter = (await data.token.balanceOf(accounts[0]));
       var user2OwnsAfter = (await data.token.balanceOf(accounts[2]));
       var user1OwnsAfter = (await data.token.balanceOf(accounts[1]));
-    
+
       //range max 1000 wei
       user0OwnsAfter.should.be.bignumber.below(user0Owns.plus(expectedDividendForAccount0).plus(1000));
       user0OwnsAfter.should.be.bignumber.above(user0Owns.plus(expectedDividendForAccount0).minus(1000));
@@ -80,7 +81,16 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       user2OwnsAfter.should.be.bignumber.below(user2Owns.plus(expectedDividendForAccount2).plus(1000));
       user2OwnsAfter.should.be.bignumber.above(user2Owns.plus(expectedDividendForAccount2).minus(1000));
-  
+
+    });
+
+    it('should not allow starting a new dividend period before the 90 days cooldown', async function () {
+
+      await data.token.startNewDividendPeriod();
+      var increaseTime = (await latestTime()) + duration.days(89);
+      await increaseTimeTo(increaseTime);
+      await data.token.startNewDividendPeriod().should.be.rejectedWith(EVMRevert);
+
     });
 
     //A-> token / B-> D( empty balance) / D->E (empty balance)
@@ -119,7 +129,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       amountToPayBefore.should.be.bignumber.above(amountToPayAfter);
     });
 
-    //send to dividend and transfer check 
+    //send to dividend and transfer check
     it('should not include additional dividend and should not calculate dividend when sending to token SC', async function () {
       await data.token.transfer(data.token.address, "100000" + "00000000000");
 
@@ -127,7 +137,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       var dividendAmount = new BigNumber("200000" + "00000000000");
       var user1Owns = (await data.token.balanceOf(accounts[1]));
-      
+
       await data.token.transfer(data.token.address, dividendAmount, { from: accounts[1] });
 
       var user1OwnsAfter = (await data.token.balanceOf(accounts[1]));
@@ -144,7 +154,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       //range 1000 wei
       balanceAfterDividend.should.be.bignumber.below(user1OwnsAfter.plus(expectedDividendForAccount1).plus(1000));
       balanceAfterDividend.should.be.bignumber.above(user1OwnsAfter.plus(expectedDividendForAccount1).minus(1000));
-      
+
     });
 
     it('should pay proportional dividend when transferFrom case A->(A->A)', async function () {
@@ -154,7 +164,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       await data.token.startNewDividendPeriod();
 
       var user1Owns = (await data.token.balanceOf(accounts[1]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -179,7 +189,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       await data.token.startNewDividendPeriod();
 
       var user1Owns = (await data.token.balanceOf(accounts[1]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -203,7 +213,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       var user1Owns = (await data.token.balanceOf(accounts[1]));
       var user2Owns = (await data.token.balanceOf(accounts[2]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -223,7 +233,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       //range 1000 wei
       user2OwnsAfter.should.be.bignumber.below(user2Owns.plus(expectedDividendForAccount2).plus(allowanceAmount).plus(1000));
       user2OwnsAfter.should.be.bignumber.above(user2Owns.plus(expectedDividendForAccount2).plus(allowanceAmount).minus(1000));
-       
+
     });
 
     it('should pay proportional dividend when transferFrom case A->(B->A)', async function () {
@@ -234,7 +244,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       var user1Owns = (await data.token.balanceOf(accounts[1]));
       var user2Owns = (await data.token.balanceOf(accounts[2]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -254,7 +264,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       //range 1000 wei
       user2OwnsAfter.should.be.bignumber.below(user2Owns.plus(expectedDividendForAccount2).minus(allowanceAmount).plus(1000));
       user2OwnsAfter.should.be.bignumber.above(user2Owns.plus(expectedDividendForAccount2).minus(allowanceAmount).minus(1000));
-       
+
     });
 
     it('should pay proportional dividend when transferFrom case A->(B->B)', async function () {
@@ -265,7 +275,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       var user1Owns = (await data.token.balanceOf(accounts[1]));
       var user2Owns = (await data.token.balanceOf(accounts[2]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -285,7 +295,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       //range 1000 wei
       user2OwnsAfter.should.be.bignumber.below(user2Owns.plus(expectedDividendForAccount2).plus(1000));
       user2OwnsAfter.should.be.bignumber.above(user2Owns.plus(expectedDividendForAccount2).minus(1000));
-       
+
     });
 
     it('should not pay dividend when transferFrom case A->(B->token)', async function () {
@@ -296,7 +306,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       var user1Owns = (await data.token.balanceOf(accounts[1]));
       var user2Owns = (await data.token.balanceOf(accounts[2]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -311,7 +321,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
 
       user1OwnsAfter.should.be.bignumber.equals(user1Owns);
       user2OwnsAfter.should.be.bignumber.equals(user2Owns.minus(allowanceAmount));
-       
+
     });
 
     it('should pay proportional dividend when transferFrom case A->(B->C)', async function () {
@@ -323,7 +333,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       var user1Owns = (await data.token.balanceOf(accounts[1]));
       var user2Owns = (await data.token.balanceOf(accounts[2]));
       var user0Owns = (await data.token.balanceOf(accounts[0]));
-      
+
       var totalSupply = await data.token.totalSupply();
       var factor = dividendAmount.div(totalSupply.minus(dividendAmount));
       var expectedDividendForAccount1 = user1Owns.mul(factor);
@@ -349,7 +359,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       //range 1000 wei
       user0OwnsAfter.should.be.bignumber.below(user0Owns.plus(expectedDividendForAccount0).plus(allowanceAmount).plus(1000));
       user0OwnsAfter.should.be.bignumber.above(user0Owns.plus(expectedDividendForAccount0).plus(allowanceAmount).minus(1000));
-       
+
     });
 
   });

@@ -1,6 +1,7 @@
 import { latestTime } from 'openzeppelin-solidity/test/helpers/latestTime';
 import { advanceBlock } from 'openzeppelin-solidity/test/helpers/advanceToBlock';
 import { increaseTimeTo, duration } from 'openzeppelin-solidity/test/helpers/increaseTime';
+import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
 const NameRegistry = artifacts.require('NameRegistry');
 const PwayToken = artifacts.require('PwayToken');
 
@@ -9,17 +10,6 @@ const should = require('chai')
   .use(require('chai-as-promised'))
   .use(require('chai-bignumber')(BigNumber))
   .should();
-
-var assertRevert= async function(promise){
-
-  try {
-    await promise;
-    assert.fail('Expected revert not received');
-  } catch (error) {
-    const revertFound = error.message.search('revert') >= 0;
-    assert(revertFound, `Expected "revert", got ${error} instead`);
-  }
-}
 
 contract('DividendPayableToken Complex Dividend', function (accounts) {
   var data = {};
@@ -99,7 +89,7 @@ contract('DividendPayableToken Complex Dividend', function (accounts) {
       await data.token.startNewDividendPeriod();
       var increaseTime = (await latestTime()) + duration.days(89);
       await increaseTimeTo(increaseTime);
-      assertRevert(data.token.startNewDividendPeriod());
+      await data.token.startNewDividendPeriod().should.be.rejectedWith(EVMRevert);
 
     });
 

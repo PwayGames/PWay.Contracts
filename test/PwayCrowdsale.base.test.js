@@ -15,12 +15,12 @@ const should = require('chai')
   .use(require('chai-as-promised'))
   .use(require('chai-bignumber')(BigNumber))
   .should();
-  
+
   contract('PwayKYCCrowdsale ICO', function (accounts) {
        var data = {};
        const RATE = new BigNumber(400);
        const DECIMAL_TOKEN_DIFFERENCE = new BigNumber(10000000);
-   
+
           beforeEach(async function () {
 
             data.nameRegistry = await NameRegistry.new();
@@ -45,8 +45,8 @@ const should = require('chai')
 
               await increaseTimeTo(this.openingTime+2);
           });
-          
-          
+
+
           describe('PwayKYCCrowdsale base test', function () {
             it('rate is set', async function () {
                 var rate = await data.authority.saleRate.call();
@@ -59,7 +59,7 @@ const should = require('chai')
                 await increaseTimeTo(this.openingTime+10);
                 await data.crowdsale.buyTokens(accounts[3], {value:waiValue, from:accounts[3]})
                     .should.be.rejectedWith(EVMRevert);
-                
+
             });
 
             it('should fail on buying token above maximum  investment', async function () {
@@ -68,7 +68,7 @@ const should = require('chai')
                 await increaseTimeTo(this.openingTime+10);
                 await data.crowdsale.buyTokens(accounts[3], {value:waiValue, from:accounts[3]})
                     .should.be.rejectedWith(EVMRevert);
-                
+
             });
 
             it('should change Investments range', async function () {
@@ -80,7 +80,7 @@ const should = require('chai')
                 await data.company.setInvestmentRange(_minInvestment,_maxInvestment);
                 var minInvestmentPost = await  data.crowdsale.minInvestment.call();
                 minInvestmentPost.should.be.bignumber.equal(_minInvestment);
-                
+
             });
 
             it('should fail on buying token after closingTime', async function () {
@@ -89,20 +89,20 @@ const should = require('chai')
                 await increaseTimeTo(this.openingTime+duration.years(2));
                 await data.crowdsale.buyTokens(accounts[3], {value:weiValue, from:accounts[3]})
                     .should.be.rejectedWith(EVMRevert);
-                
+
             });
 
             it('should change operator address', async function () {
-                
+
                 await increaseTimeTo(this.openingTime+10);
                 var preOperatorAddress = await data.crowdsale.operator.call();
                 await data.company.changeKYCOperator(accounts[3]);
-                await data.company.changeKYCOperator(accounts[3], {from:accounts[1]}); 
+                await data.company.changeKYCOperator(accounts[3], {from:accounts[1]});
 
                 var postOperatorAddress = await data.crowdsale.operator.call();
                 preOperatorAddress.should.not.equal(postOperatorAddress);
                 postOperatorAddress.should.equal(accounts[3]);
-                
+
             });
 
             it('should failed on processKYC when no _beneficient available', async function () {
@@ -112,7 +112,7 @@ const should = require('chai')
                 await data.crowdsale.buyTokens(accounts[4], {value:weiValue, from:accounts[4]});
                 await data.crowdsale.processKYC( accounts[3], true, {from:accounts[1]})
                 .should.be.rejectedWith(EVMRevert);
-                
+
             });
 
             it('should lock investment', async function () {
@@ -124,9 +124,9 @@ const should = require('chai')
                 const event = logs.find(e => e.event === 'TokenLocked');
                 should.exist(event);
                 should.exist(event.args.tokens);
-              
+
                 event.args.tokens.should.be.bignumber.equal(weiValue/DECIMAL_TOKEN_DIFFERENCE*rate);
-                
+
             });
 
             it('should release pways after acceptance', async function () {
@@ -139,10 +139,10 @@ const should = require('chai')
                 var lockedTokens = event.args.tokens;
 
                 await data.crowdsale.processKYC( accounts[4], true, {from:accounts[1]});
-                
+
                 var userBalance = await data.token.balanceOf(accounts[4]);
                 userBalance.should.be.bignumber.equal(lockedTokens);
-                
+
             });
 
             it('should release ether after rejection', async function () {
@@ -154,13 +154,13 @@ const should = require('chai')
                 var preEthBalance = await web3.eth.getBalance(accounts[4]);
 
                 await data.crowdsale.processKYC( accounts[4], false, {from:accounts[1]});
-                
+
                 var postEthBalance = await web3.eth.getBalance(accounts[4]);
                 var userBalance = await data.token.balanceOf(accounts[4]);
                 userBalance.should.be.bignumber.equal(0);
-      
+
                 postEthBalance.should.be.bignumber.equal(preEthBalance.plus(weiValue));
-                
+
             });
 
             it('should decrease crowdsale token balance after purchase', async function () {
@@ -173,13 +173,13 @@ const should = require('chai')
                 const post = new BigNumber(await data.token.balanceOf(data.crowdsale.address));
                 const diff = waiValue*RATE/(DECIMAL_TOKEN_DIFFERENCE);
                 pre.minus(post).should.be.bignumber.equal(diff);
-                
+
             });
 
             it('can\'t be finalized before sales end', async function () {
                 await increaseTimeTo(this.openingTime+10);
                 await data.crowdsale.finalize().should.be.rejectedWith(EVMRevert);
-                
+
             });
 
 
@@ -199,16 +199,23 @@ const should = require('chai')
                 const diff = balance - waiValue*RATE/(DECIMAL_TOKEN_DIFFERENCE);
                 pre.minus(post).should.be.bignumber.equal(diff);
                 (await data.token.balanceOf(data.crowdsale.address)).should.be.bignumber.equal(0);
-                
+
             });
-            
-          });    
-        
+
+            it('should not allow calling transfer from external address', async function () {
+              await increaseTimeTo(this.openingTime+10);
+              var waiValue = ether(0.01);
+              await data.crowdsale.buyTokens(accounts[3], { value: waiValue, from: accounts[3] });
+              await data.crowdsale.tranferTokens(accounts[3],  10*waiValue*RATE/(DECIMAL_TOKEN_DIFFERENCE), 1, {from:accounts[3]})
+                .should.be.rejectedWith(EVMRevert);
+            });
+
+          });
+
   });
 
- 
-  
-  
-  
-  
-  
+
+
+
+
+

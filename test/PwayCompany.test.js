@@ -180,7 +180,7 @@ contract('PwayCompany', function (accounts) {
             let vB = "ffffffff" + "ffffffff" + "ffffffff" + "ffffffff";
             let veryBig = new BigNumber("0x" + vB + vB);
             // this function is public ?
-            await data.company.guardSumAndCaller(veryBig, false,{from:accounts[1]});
+        //    await data.company.guardSumAndCaller(veryBig, false,{from:accounts[1]});
             // second transfer of 2 USD, should not pass
             await data.company.transferTokens(accounts[5],"20" + "000000",{from:accounts[1]});
             let Acc5AfterBalance = await data.token.balanceOf(accounts[5]);

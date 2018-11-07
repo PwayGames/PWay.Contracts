@@ -166,7 +166,29 @@ contract('PwayCompany', function (accounts) {
 
         });
 
-        it('should send amount of ether above day limit by single call if more than day passes', async function () {
+        it('should not send tokens above day limit by single call (overflow proof)', async function () {
+            // set day limit to 2 USD
+            await data.company.updateDayLimitTotal("2",{from:accounts[1]});
+            await data.company.updateDayLimitTotal("2",{from:accounts[2]});
+
+            var Acc5BeforeBalance = await data.token.balanceOf(accounts[5]);
+
+            // first transfer of 1 USD
+            let amount1 = new BigNumber("10" + "000000");
+            await data.company.transferTokens(accounts[5], amount1,{from:accounts[1]});
+            // overflow dayLimitUsed
+            let vB = "ffffffff" + "ffffffff" + "ffffffff" + "ffffffff";
+            let veryBig = new BigNumber("0x" + vB + vB);
+            // this function is public ?
+        //    await data.company.guardSumAndCaller(veryBig, false,{from:accounts[1]});
+            // second transfer of 2 USD, should not pass
+            await data.company.transferTokens(accounts[5],"20" + "000000",{from:accounts[1]});
+            let Acc5AfterBalance = await data.token.balanceOf(accounts[5]);
+            return Acc5AfterBalance.should.be.bignumber.equal(Acc5BeforeBalance.plus(amount1));
+
+      });
+
+      it('should send amount of ether above day limit by single call if more than day passes', async function () {
             await data.company.updateDayLimitTotal(data.RATE / 2,{from:accounts[1]});
             await data.company.updateDayLimitTotal(data.RATE / 2,{from:accounts[2]});
             web3.eth.sendTransaction({ from: accounts[6], to: data.company.address, value: ether(1) });

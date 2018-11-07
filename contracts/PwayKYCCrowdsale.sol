@@ -117,7 +117,7 @@ contract PwayKYCCrowdsale is PwayTimeCrowdsale {
         }
     }
 
-    function tranferTokens(address _beneficiary, uint256 _tokensToRelease, uint256 _weiAmount) public {
+    function tranferTokens(address _beneficiary, uint256 _tokensToRelease, uint256 _weiAmount) internal {
         PwayAuthority wallet = PwayAuthority(registry.getAddress("Authority"));
 		
         require(token.transfer(_beneficiary, _tokensToRelease));

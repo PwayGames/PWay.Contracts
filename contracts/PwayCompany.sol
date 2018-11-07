@@ -37,6 +37,7 @@ contract PwayCompany is PwayContract {
     NameRegistry private reg ;
     uint256 public ethToUsdRate;
     uint256 private DECIMALS_MULTIPLAYER ;
+	using SafeMath for uint256 ;
     
     mapping (address=>uint256) private allowedAddressesMappedToUsers;
     mapping (bytes32=>uint256[]) private functionsConfirmations;
@@ -96,7 +97,7 @@ contract PwayCompany is PwayContract {
         return isPresent;
 	}
 	
-    function guardSumAndCaller(uint256 sumOfEth,bool requiresTwoConfirmations) returns (bool){
+    function guardSumAndCaller(uint256 sumOfEth,bool requiresTwoConfirmations) private returns (bool) {
 	
         require(allowedAddressesMappedToUsers[msg.sender]>0);
 
@@ -113,7 +114,7 @@ contract PwayCompany is PwayContract {
         }
 
 		bool sufficentNumberOfConfirmations = confirmedBy.length>1;
-		bool sumInTheDailyLimit = sumOfEth+dayLimitUsed <=dayLimitTotal ;
+		bool sumInTheDailyLimit = sumOfEth.add(dayLimitUsed) <=dayLimitTotal ;
 
         if( sufficentNumberOfConfirmations || ( sumInTheDailyLimit && requiresTwoConfirmations==false) ){
             dayLimitUsed = dayLimitUsed + sumOfEth;

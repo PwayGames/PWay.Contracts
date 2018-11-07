@@ -60,7 +60,7 @@ contract DividendPayableToken is StandardToken, Ownable {
     }
 
 	function startNewDividendPeriod() public{
-        require(getNow() - lastDividendTime < 180 days);
+        require(getNow() - lastDividendTime > 90 days);
 
         uint tokenBalance = balanceOf(address(this)); 
         lastDividendTime = getNow();

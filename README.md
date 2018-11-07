@@ -1,5 +1,5 @@
 # PWay.Contracts
-
+.
 Set of contracts responsible for operation of:
 
 https://pway.io

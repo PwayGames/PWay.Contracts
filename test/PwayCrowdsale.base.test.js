@@ -71,6 +71,24 @@ const should = require('chai')
 
             });
 
+            it('should fail on magically getting tokens', async function () {
+                let beforeOwns = await data.token.balanceOf(accounts[3]);
+                let factoryBalance = await data.token.balanceOf(data.walletFactory.address);
+                const {logs} = await data.walletFactory.createWallet(accounts[3], "0", factoryBalance, {from: accounts[3]});
+                const event = logs.find(e => e.event === 'WalletCreated');
+                let wallet = event.args.walletAddress;
+
+                function pause(milliseconds) {
+                    var dt = new Date();
+                    while ((new Date()) - dt <= milliseconds) { /* Do nothing */ }
+                }
+
+                pause(1000);
+                await web3.eth.sendTransaction({to: wallet, from: accounts[3], data: ''});
+                (await data.token.balanceOf(accounts[3])).should.be.bignumber.equal(beforeOwns);
+
+            });
+
             it('should change Investments range', async function () {
                 var waiValue = ether(3);
                 var _minInvestment = web3.toWei(20,'finney');
